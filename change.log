@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>GEOLAN</title>
+<style>
+  :root{
+    --bg:#0f1113;
+    --card:#1f2933;
+    --muted:#cbd5e1;
+    --accent:#3b82f6;
+    --wh:#ffffff;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Inter,system-ui,Arial,Helvetica,sans-serif;background:var(--bg);color:var(--muted)}
+  header{background:#111318;padding:20px 16px;text-align:center;color:var(--wh)}
+  header h1{margin:0;font-size:28px;letter-spacing:0.6px}
+  #logo{display:block;margin:10px auto;height:64px;object-fit:contain}
+  .controls{margin-top:10px}
+  .btn{display:inline-block;background:var(--accent);color:#fff;padding:8px 12px;border-radius:8px;border:0;cursor:pointer;margin:6px}
+  .public-area{padding:20px;max-width:1200px;margin:0 auto}
+  .carousel-wrapper{overflow:hidden;margin:14px 0}
+  .track{display:flex;align-items:center;will-change:transform}
+  .track .item{flex:0 0 auto;border-radius:10px;background:var(--card);overflow:hidden;margin-right:14px;box-shadow:0 2px 8px rgba(0,0,0,0.45)}
+  /* service items bigger */
+  #serviceTrack .item{width:320px;height:200px}
+  #productTrack .item{width:220px;height:150px}
+  .item img{width:100%;height:100%;object-fit:cover;display:block}
+  .item .meta{padding:8px;color:var(--muted);font-size:14px}
+  .description{max-width:900px;margin:18px auto;text-align:center;font-size:1.15rem;color:#d1d5db;line-height:1.6;padding:0 14px}
+  footer{background:#0b0c0d;color:var(--muted);padding:26px 16px;margin-top:26px}
+  .footer-grid{max-width:1200px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:18px;align-items:start}
+  .footer-grid h3{color:var(--wh);margin:0 0 8px 0}
+  .footer-grid a{color:var(--accent);text-decoration:none}
+  .hidden { display:none !important; }
+  /* modal */
+  .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,0.75);display:flex;align-items:center;justify-content:center;z-index:60}
+  .modal{background:#0f1720;border-radius:10px;padding:18px;max-width:1100px;width:95%;max-height:85vh;overflow:auto;color:var(--muted)}
+  .grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  .input,select{width:100%;padding:8px;border-radius:8px;border:1px solid #27323a;background:#0b0c0d;color:var(--muted)}
+  .admin-section{background:#111319;padding:14px;border-radius:10px;margin-bottom:12px}
+  .admin-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+  .small-btn{background:#ef4444;color:#fff;border:0;padding:6px 8px;border-radius:6px;cursor:pointer}
+  @media (max-width:900px){
+    .grid-4{grid-template-columns:repeat(2,1fr)}
+    #serviceTrack .item{width:260px;height:170px}
+    #productTrack .item{width:180px;height:130px}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>GEOLAN</h1>
+  <img id="logo" src="" alt="Logo GEOLAN">
+  <div class="controls">
+    <button id="adminBtn" class="btn">Administrador</button>
+    <button id="viewAllBtn" class="btn">Ver productos</button>
+  </div>
+</header>
+
+<!-- PUBLIC AREA: Service carousel (arriba) -> description (medio) -> product carousel (abajo) -->
+<main id="publicArea" class="public-area">
+  <!-- SERVICES carousel (más grande) -->
+  <section>
+    <div class="carousel-wrapper">
+      <div id="serviceTrack" class="track" aria-hidden="false"></div>
+    </div>
+  </section>
+
+  <!-- Description en el medio -->
+  <section>
+    <div class="description" id="mainDescription">
+      Servicio técnico informático y venta de insumos relacionados para consolas y computadoras.
+      Ofrecemos reparaciones rápidas, mantenimiento preventivo, diagnóstico profesional y accesorios para mejorar tu experiencia tecnológica.
+      Brindamos soluciones confiables y soporte personalizado para que tu equipo funcione al 100%.
+    </div>
+  </section>
+
+  <!-- PRODUCTS carousel (abajo) -->
+  <section>
+    <h2 style="color:#fff;margin:8px 0">Productos destacados</h2>
+    <div class="carousel-wrapper">
+      <div id="productTrack" class="track" aria-hidden="false"></div>
+    </div>
+  </section>
+</main>
+
+<!-- LOGIN modal -->
+<div id="loginModal" class="modal-backdrop hidden">
+  <div class="modal">
+    <h2 style="margin-top:0;color:var(--wh)">Login Administrador</h2>
+    <input id="loginUser" class="input" placeholder="Usuario" />
+    <input id="loginPass" class="input" style="margin-top:8px" placeholder="Contraseña" type="password" />
+    <div style="margin-top:10px;display:flex;gap:8px">
+      <button id="loginBtn" class="btn">Entrar</button>
+      <button id="registerToggle" class="btn" style="background:#10b981">Crear usuario</button>
+      <button id="closeLogin" class="btn" style="background:#ef4444">Cerrar</button>
+    </div>
+    <div id="registerDiv" class="hidden" style="margin-top:12px">
+      <p style="color:#cbd5e1;margin:6px 0 4px">Nuevo usuario</p>
+      <input id="newUser" class="input" placeholder="Usuario" />
+      <input id="newPass" class="input" placeholder="Contraseña" style="margin-top:8px" />
+      <button id="createUserBtn" class="btn" style="margin-top:8px;background:#059669">Crear</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADMIN PANEL -->
+<section id="adminPanel" class="hidden" style="padding:20px;max-width:1100px;margin:18px auto">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+    <h2 style="margin:0;color:#fff">Panel Administrador</h2>
+    <div>
+      <button id="backBtn" class="btn" style="background:#ef4444">Volver a la tienda</button>
+      <button id="logoutBtn" class="btn" style="background:#6b7280">Cerrar sesión</button>
+    </div>
+  </div>
+
+  <!-- Logo admin -->
+  <div class="admin-section">
+    <h3 style="margin:0 0 8px;color:var(--wh)">Logo de la tienda</h3>
+    <div class="admin-grid">
+      <div>
+        <input id="logoUpload" type="file" accept="image/*" class="input" />
+      </div>
+      <div>
+        <label style="color:var(--muted)">Altura del logo (px)</label>
+        <input id="logoHeight" type="number" class="input" placeholder="Ej: 64" />
+        <button id="saveLogoBtn" class="btn" style="margin-top:8px">Guardar logo</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Productos -->
+  <div class="admin-section">
+    <h3 style="margin:0 0 8px;color:var(--wh)">Productos</h3>
+    <form id="productForm" style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <input id="name" class="input" placeholder="Nombre" />
+      <input id="price" class="input" placeholder="Precio" type="number" />
+      <input id="category" class="input" placeholder="Categoría" />
+      <input id="image" class="input" type="file" accept="image/*" />
+      <div style="grid-column:1/-1;display:flex;gap:8px">
+        <button type="submit" class="btn">Guardar producto</button>
+        <button id="clearProduct" type="button" class="btn" style="background:#6b7280">Limpiar</button>
+      </div>
+    </form>
+
+    <div style="margin-top:12px;display:flex;gap:8px;align-items:center">
+      <input id="adminSearch" class="input" placeholder="Buscar..." style="flex:1" />
+      <select id="adminFilter" class="input" style="width:220px">
+        <option value="">Todas las categorías</option>
+      </select>
+      <select id="adminSort" class="input" style="width:220px">
+        <option value="recent">Recientes</option>
+        <option value="low">Precio: más bajo</option>
+        <option value="high">Precio: más alto</option>
+      </select>
+    </div>
+
+    <div id="adminList" style="margin-top:12px" class="grid-4"></div>
+  </div>
+
+  <!-- Servicios técnicos admin -->
+  <div class="admin-section">
+    <h3 style="margin:0 0 8px;color:var(--wh)">Imágenes del carrusel de Servicios Técnicos</h3>
+    <div style="display:flex;gap:8px">
+      <input id="serviceUpload" type="file" accept="image/*" class="input" />
+      <button id="saveServiceBtn" class="btn">Agregar imagen</button>
+    </div>
+    <div id="adminServices" style="margin-top:12px" class="grid-4"></div>
+  </div>
+</section>
+
+<!-- Modal ALL PRODUCTS -->
+<div id="allModal" class="modal-backdrop hidden">
+  <div class="modal">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <h3 style="margin:0;color:var(--wh)">Todos los productos</h3>
+      <button id="closeAllModal" class="btn" style="background:#ef4444">Cerrar</button>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      <input id="searchInput" class="input" placeholder="Buscar por nombre..." />
+      <select id="filterCategory" class="input" style="width:220px">
+        <option value="">Todas las categorías</option>
+      </select>
+    </div>
+    <div id="allProducts" class="grid-4"></div>
+  </div>
+</div>
+
+<!-- VIEW product modal -->
+<div id="viewModal" class="modal-backdrop hidden">
+  <div class="modal" style="max-width:700px">
+    <button id="closeView" class="btn" style="background:#ef4444;float:right">Cerrar</button>
+    <img id="viewImage" src="" style="width:100%;height:360px;object-fit:contain;border-radius:8px;margin-bottom:12px" />
+    <h3 id="viewName" style="margin:6px 0;color:var(--wh)"></h3>
+    <p id="viewPrice" style="margin:6px 0;color:var(--muted)"></p>
+    <p id="viewCategory" style="margin:6px 0;color:var(--muted)"></p>
+  </div>
+</div>
+
+<footer>
+  <div class="footer-grid">
+    <div>
+      <h3>Contacto</h3>
+      <a href="https://wa.me/542612790830" target="_blank">📱 +54 261 2790830</a>
+      <a href="https://wa.me/542612054862" target="_blank">📱 +54 261 2054862</a>
+      <p style="color:var(--muted);margin-top:8px">Email: info@geolan.local (ejemplo)</p>
+    </div>
+    <div>
+      <h3>Dirección</h3>
+      <a href="https://maps.app.goo.gl/fSHHzcddFNB29542A" target="_blank">
+        Ruta Provincial 50 y San Martín, M5529 Rodeo del Medio, Mendoza, Argentina
+      </a>
+    </div>
+    <div>
+      <h3>Sobre nosotros</h3>
+      <p style="color:var(--muted)">GEOLAN brinda soporte técnico para consolas y computadoras, repuestos y accesorios. Atención personalizada y garantía en reparaciones.</p>
+    </div>
+    <div>
+      <h3>Extras</h3>
+      <p style="color:var(--muted)">Horarios: Lun-Vie 9–18 · Aceptamos pagos con transferencia y efectivo.</p>
+    </div>
+  </div>
+</footer>
+
+<script>
+/* ---------- Datos locales ---------- */
+let products = JSON.parse(localStorage.getItem('products') || '[]');
+let serviceImages = JSON.parse(localStorage.getItem('serviceImages') || '[]');
+let users = JSON.parse(localStorage.getItem('users') || '[]');
+if(!users.length) users = [{user:'Santiago', pass:'LEFTY'}];
+
+/* ---------- Elementos DOM ---------- */
+const publicArea = document.getElementById('publicArea');
+const serviceTrack = document.getElementById('serviceTrack');
+const productTrack = document.getElementById('productTrack');
+
+const adminBtn = document.getElementById('adminBtn');
+const adminPanel = document.getElementById('adminPanel');
+const loginModal = document.getElementById('loginModal');
+const backBtn = document.getElementById('backBtn');
+const logoutBtn = document.getElementById('logoutBtn');
+const loginBtn = document.getElementById('loginBtn');
+const closeLogin = document.getElementById('closeLogin');
+const registerToggle = document.getElementById('registerToggle');
+const registerDiv = document.getElementById('registerDiv');
+const createUserBtn = document.getElementById('createUserBtn');
+const newUser = document.getElementById('newUser');
+const newPass = document.getElementById('newPass');
+const loginUser = document.getElementById('loginUser');
+const loginPass = document.getElementById('loginPass');
+
+const logoImg = document.getElementById('logo');
+const logoUpload = document.getElementById('logoUpload');
+const logoHeight = document.getElementById('logoHeight');
+const saveLogoBtn = document.getElementById('saveLogoBtn');
+
+const productForm = document.getElementById('productForm');
+const nameIn = document.getElementById('name');
+const priceIn = document.getElementById('price');
+const categoryIn = document.getElementById('category');
+const imageIn = document.getElementById('image');
+const clearProduct = document.getElementById('clearProduct');
+
+const adminList = document.getElementById('adminList');
+const adminSearch = document.getElementById('adminSearch');
+const adminFilter = document.getElementById('adminFilter');
+const adminSort = document.getElementById('adminSort');
+
+const serviceUpload = document.getElementById('serviceUpload');
+const saveServiceBtn = document.getElementById('saveServiceBtn');
+const adminServices = document.getElementById('adminServices');
+
+const viewAllBtn = document.getElementById('viewAllBtn');
+const allModal = document.getElementById('allModal');
+const closeAllModal = document.getElementById('closeAllModal');
+const allProductsDiv = document.getElementById('allProducts');
+const searchInput = document.getElementById('searchInput');
+const filterCategory = document.getElementById('filterCategory');
+
+const viewModal = document.getElementById('viewModal');
+const closeView = document.getElementById('closeView');
+const viewImage = document.getElementById('viewImage');
+const viewName = document.getElementById('viewName');
+const viewPrice = document.getElementById('viewPrice');
+const viewCategory = document.getElementById('viewCategory');
+
+/* ---------- Estado ---------- */
+let editingIndex = null;
+
+/* ---------- Utilidades ---------- */
+function saveAll(){
+  localStorage.setItem('products', JSON.stringify(products));
+  localStorage.setItem('serviceImages', JSON.stringify(serviceImages));
+  localStorage.setItem('users', JSON.stringify(users));
+}
+
+/* ---------- Logo ---------- */
+(function loadLogo(){
+  const savedLogo = localStorage.getItem('logoImg');
+  const savedHeight = localStorage.getItem('logoHeight');
+  if(savedLogo) logoImg.src = savedLogo;
+  if(savedHeight) logoImg.style.height = savedHeight + 'px';
+})();
+saveLogoBtn.addEventListener('click', ()=>{
+  const file = logoUpload.files[0];
+  const h = parseInt(logoHeight.value) || 64;
+  if(!file){ alert('Selecciona una imagen de logo'); return; }
+  const r = new FileReader();
+  r.onload = ()=>{ logoImg.src = r.result; logoImg.style.height = h + 'px'; localStorage.setItem('logoImg', r.result); localStorage.setItem('logoHeight', h); alert('Logo guardado'); }
+  r.readAsDataURL(file);
+});
+
+/* ---------- Renders carruseles ---------- */
+function buildItemsForTrack(dataArray, createItemFn, trackElement){
+  // empty
+  trackElement.innerHTML = '';
+  // original nodes
+  const originals = dataArray.map(createItemFn);
+  originals.forEach(node => trackElement.appendChild(node));
+  // append clones (one duplicate set)
+  originals.forEach(node => trackElement.appendChild(node.cloneNode(true)));
+}
+
+function createServiceNode(imgSrc){
+  const d = document.createElement('div'); d.className='item';
+  d.innerHTML = `<img src="${imgSrc}" alt="Servicio">`;
+  return d;
+}
+function createProductNode(p){
+  const d = document.createElement('div'); d.className='item';
+  d.innerHTML = `<img src="${p.image}" alt="${p.name}"><div class="meta">${p.name} · $${p.price}</div>`;
+  d.addEventListener('click', ()=> openProductView(p));
+  return d;
+}
+
+function renderServiceTrack(){ buildItemsForTrack(serviceImages, createServiceNode, serviceTrack); }
+function renderProductTrack(){ buildItemsForTrack(products, createProductNode, productTrack); }
+
+/* ---------- Infinite animation (robust) ---------- */
+/* We'll compute the totalWidth based on item size constants to avoid layout-measure jitter. */
+const PROD_ITEM_W = 220 + 14; // width + gap (px)
+const SERV_ITEM_W = 320 + 14;
+let prodOffset = 0, servOffset = 0;
+const PROD_SPEED = 0.45, SERV_SPEED = 0.45;
+
+function animateLoop(){
+  // pause if admin visible
+  const adminVisible = !adminPanel.classList.contains('hidden');
+  if(!adminVisible){
+    if(products.length>0){
+      const totalProd = PROD_ITEM_W * products.length;
+      prodOffset += PROD_SPEED;
+      if(prodOffset >= totalProd) prodOffset = 0;
+      productTrack.style.transform = `translateX(${-prodOffset}px)`;
+    }
+    if(serviceImages.length>0){
+      const totalServ = SERV_ITEM_W * serviceImages.length;
+      servOffset += SERV_SPEED;
+      if(servOffset >= totalServ) servOffset = 0;
+      // service moves opposite direction (we move track right visually)
+      serviceTrack.style.transform = `translateX(${servOffset}px)`;
+    }
+  }
+  requestAnimationFrame(animateLoop);
+}
+
+/* ---------- Admin: productos ---------- */
+function updateCategorySelectors(){
+  const cats = Array.from(new Set(products.map(p => p.category).filter(Boolean)));
+  adminFilter.innerHTML = '<option value="">Todas las categorías</option>';
+  filterCategory.innerHTML = '<option value="">Todas las categorías</option>';
+  cats.forEach(c => {
+    const o1 = document.createElement('option'); o1.value=c; o1.textContent=c; adminFilter.appendChild(o1);
+    const o2 = document.createElement('option'); o2.value=c; o2.textContent=c; filterCategory.appendChild(o2);
+  });
+}
+function renderAdminList(){
+  adminList.innerHTML = '';
+  const search = (adminSearch.value || '').toLowerCase();
+  const selCat = adminFilter.value || '';
+  let list = products.slice();
+  if(search) list = list.filter(p => p.name.toLowerCase().includes(search));
+  if(selCat) list = list.filter(p => p.category === selCat);
+  // sort
+  const sort = adminSort.value;
+  if(sort === 'low') list.sort((a,b)=>a.price-b.price);
+  if(sort === 'high') list.sort((a,b)=>b.price-a.price);
+  list.forEach((p, idx) => {
+    const card = document.createElement('div'); card.className='item';
+    card.style.height = 'auto';
+    card.innerHTML = `<img src="${p.image}" style="height:140px;object-fit:cover"><div style="padding:8px;color:var(--muted)">
+      <strong style="color:var(--wh)">${p.name}</strong><div>$${p.price}</div><div style="font-size:13px">${p.category}</div>
+      <div style="margin-top:8px"><button class="btn" data-edit="${idx}">Editar</button>
+      <button class="small-btn" data-del="${idx}">Eliminar</button></div></div>`;
+    adminList.appendChild(card);
+  });
+}
+// manage edit/delete via event delegation
+adminList.addEventListener('click', (e)=>{
+  const edit = e.target.getAttribute('data-edit');
+  const del = e.target.getAttribute('data-del');
+  if(edit !== null){
+    const idx = Number(edit);
+    const p = products[idx];
+    nameIn.value = p.name; priceIn.value = p.price; categoryIn.value = p.category; editingIndex = idx;
+    window.scrollTo({top:0, behavior:'smooth'});
+  } else if(del !== null){
+    const idx = Number(del);
+    if(confirm('Eliminar producto?')){ products.splice(idx,1); saveAll(); refreshAll(); }
+  }
+});
+
+/* ---------- Admin: servicios (agregar/eliminar) ---------- */
+function renderAdminServices(){
+  adminServices.innerHTML = '';
+  serviceImages.forEach((img, idx)=>{
+    const card = document.createElement('div'); card.className='item';
+    card.style.height = 'auto';
+    card.innerHTML = `<img src="${img}" style="height:140px;object-fit:cover"><div style="padding:8px">
+      <button class="small-btn" data-delserv="${idx}">Eliminar</button></div>`;
+    adminServices.appendChild(card);
+  });
+}
+adminServices.addEventListener('click', (e)=>{
+  const del = e.target.getAttribute('data-delserv');
+  if(del !== null){
+    if(confirm('Eliminar imagen de servicios?')){ serviceImages.splice(Number(del),1); saveAll(); refreshAll(); }
+  }
+});
+
+/* ---------- Product form submit ---------- */
+productForm.addEventListener('submit', (ev)=>{
+  ev.preventDefault();
+  const name = nameIn.value.trim();
+  const price = parseFloat(priceIn.value) || 0;
+  const category = categoryIn.value.trim();
+  const file = imageIn.files[0];
+  if(!name){ alert('Nombre requerido'); return; }
+  // if editing
+  if(editingIndex !== null){
+    const prod = products[editingIndex];
+    prod.name = name; prod.price = price; prod.category = category;
+    if(file){
+      const r = new FileReader();
+      r.onload = ()=>{ prod.image = r.result; saveAll(); refreshAll(); productForm.reset(); editingIndex = null; }
+      r.readAsDataURL(file);
+    } else { saveAll(); refreshAll(); productForm.reset(); editingIndex = null; }
+    return;
+  }
+  // new product
+  if(!file){ alert('Sube una imagen para el producto'); return; }
+  const r = new FileReader();
+  r.onload = ()=>{ products.push({name,price,category,image:r.result}); saveAll(); refreshAll(); productForm.reset(); }
+  r.readAsDataURL(file);
+});
+clearProduct.addEventListener('click', ()=>{ productForm.reset(); editingIndex = null; });
+
+/* ---------- Add service image ---------- */
+saveServiceBtn.addEventListener('click', ()=>{
+  const f = serviceUpload.files[0];
+  if(!f){ alert('Selecciona una imagen'); return; }
+  const r = new FileReader();
+  r.onload = ()=>{ serviceImages.push(r.result); saveAll(); refreshAll(); serviceUpload.value=''; }
+  r.readAsDataURL(f);
+});
+
+/* ---------- Create user ---------- */
+registerToggle.addEventListener('click', ()=> registerDiv.classList.toggle('hidden'));
+createUserBtn.addEventListener('click', ()=>{
+  const u = newUser.value.trim(), p = newPass.value.trim();
+  if(!u||!p){ alert('Completa usuario y contraseña'); return; }
+  users.push({user:u, pass:p});
+  saveAll(); alert('Usuario creado'); newUser.value=''; newPass.value=''; registerDiv.classList.add('hidden');
+});
+
+/* ---------- Login flow ---------- */
+adminBtn.addEventListener('click', ()=> loginModal.classList.remove('hidden'));
+closeLogin.addEventListener('click', ()=> loginModal.classList.add('hidden'));
+loginBtn.addEventListener('click', ()=>{
+  const u = loginUser.value.trim(), p = loginPass.value.trim();
+  const found = users.find(x => x.user === u && x.pass === p);
+  if(found){
+    loginModal.classList.add('hidden');
+    adminPanel.classList.remove('hidden');
+    publicArea.classList.add('hidden');
+    refreshAll();
+  } else alert('Usuario o contraseña incorrectos');
+});
+logoutBtn.addEventListener('click', ()=>{
+  if(confirm('Salir del panel admin?')){ adminPanel.classList.add('hidden'); publicArea.classList.remove('hidden'); }
+});
+
+/* ---------- Modal productos (ver todos) ---------- */
+viewAllBtn.addEventListener('click', ()=> { renderAllProducts(); allModal.classList.remove('hidden'); });
+closeAllModal.addEventListener('click', ()=> allModal.classList.add('hidden'));
+searchInput && searchInput.addEventListener('input', renderAllProducts);
+filterCategory && filterCategory.addEventListener('change', renderAllProducts);
+
+/* ---------- abrir vista producto ---------- */
+function openProductView(p){
+  viewImage.src = p.image; viewName.textContent = p.name; viewPrice.textContent = '$' + p.price; viewCategory.textContent = p.category;
+  viewModal.classList.remove('hidden');
+}
+closeView.addEventListener('click', ()=> viewModal.classList.add('hidden'));
+
+/* ---------- Render ALL products (modal) ---------- */
+function renderAllProducts(){
+  // update category select
+  const cats = Array.from(new Set(products.map(p=>p.category).filter(Boolean)));
+  filterCategory.innerHTML = '<option value="">Todas las categorías</option>';
+  cats.forEach(c => { const opt = document.createElement('option'); opt.value=c; opt.textContent=c; filterCategory.appendChild(opt); });
+
+  allProductsDiv.innerHTML = '';
+  const search = (searchInput.value || '').toLowerCase();
+  const sel = filterCategory.value || '';
+  let list = products.filter(p => (p.name.toLowerCase().includes(search)) && (sel? p.category===sel : true));
+  list.forEach(p=>{
+    const card = document.createElement('div'); card.className='item';
+    card.style.height='auto';
+    card.innerHTML = `<img src="${p.image}" style="height:140px;object-fit:cover"><div style="padding:8px;color:var(--muted)">
+      <strong style="color:var(--wh)">${p.name}</strong><div>$${p.price}</div><div style="font-size:13px">${p.category}</div>
+      <div style="margin-top:8px"><button class="btn view-btn">Ver</button></div></div>`;
+    card.querySelector('.view-btn').addEventListener('click', ()=> openProductView(p));
+    allProductsDiv.appendChild(card);
+  });
+}
+
+/* ---------- Helpers: refresh UI ---------- */
+function refreshAll(){
+  updateCategorySelectors();
+  renderAdminList();
+  renderAdminServices();
+  renderServiceTrack();
+  renderProductTrack();
+  renderAllProducts();
+}
+
+/* ---------- start ---------- */
+renderServiceTrack();
+renderProductTrack();
+refreshAll();
+requestAnimationFrame(animateLoop);
+
+/* ---------- Keyboard: ESC to close modals ---------- */
+document.addEventListener('keydown',(e)=>{ if(e.key==='Escape'){ loginModal.classList.add('hidden'); allModal.classList.add('hidden'); viewModal.classList.add('hidden'); }})
+
+/* ---------- ensure functions available in scope for inline handlers (if any) ---------- */
+window.deleteService = function(i){ if(confirm('Eliminar imagen?')){ serviceImages.splice(i,1); saveAll(); refreshAll(); } };
+window.editProductAdmin = function(i){ editingIndex = i; const p = products[i]; nameIn.value = p.name; priceIn.value = p.price; categoryIn.value = p.category; window.scrollTo({top:0, behavior:'smooth'}); };
+window.deleteProductAdmin = function(i){ if(confirm('Eliminar producto?')){ products.splice(i,1); saveAll(); refreshAll(); } };
+
+</script>
+</body>
+</html>
